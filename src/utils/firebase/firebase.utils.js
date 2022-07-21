@@ -1,11 +1,12 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from 'firebase/app';
-// importation de la phase d'authentication de firebase
+// importation de la phase d'authentication de firebase avec google et redirection signIn
 import {
   getAuth,
-  signInWithRedirect,
+ // signInWithRedirect,
   signInWithPopup,
   GoogleAuthProvider,
+  createUserWithEmailAndPassword
 } from 'firebase/auth';
 // imprtation de la bd creer dans fireStrom
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
@@ -23,23 +24,27 @@ const firebaseConfig = {
 // Initialize Firebase
 const firebaseapp = initializeApp(firebaseConfig);
 
-// fournisseur google Earth
-const provider = new GoogleAuthProvider();
+// fournisseur google authentication with firebase
+const googleProvider = new GoogleAuthProvider();
 
 // initaliser les differents types styles de configurations de google
-provider.setCustomParameters({
+googleProvider.setCustomParameters({
   prompt: "select_account",
 });
 
 //import l'authenticaation de google vers firebase
 export const auth = getAuth();
 // import l'authentication par popup
-export const signInWithGooglePopup = () => signInWithPopup(auth, provider);
+export const signInWithGooglePopup = () => signInWithPopup(auth, googleProvider);
+
+// importation de l'auth avec redirection google
+//export const signInWithGoogleRedirect = () => signInWithRedirect(auth, googleProvider);
 
 // obtenir la db contenue dans firestore
 export const db = getFirestore();
 // recoit l'objet d'Auth de l'user
-export const createUserDocumentFromAuth = async (userAuth) => {
+export const createUserDocumentFromAuth = async (userAuth, additionalInformation = {} ) => {
+  if(!userAuth) return;
   const userDocRef = doc(db, 'users', userAuth.uid);
   // snapshot est une instance de donnée et de voir si elle exsite ou pas et d'entre de la bd 
   const userSnapshot = await getDoc(userDocRef);
@@ -53,6 +58,7 @@ export const createUserDocumentFromAuth = async (userAuth) => {
         displayName,
         email,
         createdAt,
+        ...additionalInformation,
       });
     } catch (error) {
       console.log('error creating the user', error.message);
@@ -60,4 +66,11 @@ export const createUserDocumentFromAuth = async (userAuth) => {
   }
 
   return userDocRef;
+};
+
+// create the instance for create the email and password in firestorm and transfert the auth, email password at firebase
+export const createAuthUserWithEmailAndPassword = async (email, password) => {
+  if (!email || !password) return;
+
+  return await createUserWithEmailAndPassword(auth, email, password);
 };
